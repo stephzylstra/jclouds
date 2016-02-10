@@ -69,6 +69,7 @@ import org.jclouds.kinetic.reference.KineticConstants;
 import org.jclouds.kinetic.util.Utils;
 import org.jclouds.io.ContentMetadata;
 import org.jclouds.io.Payload;
+import org.jclouds.kinetic.util.internal.Chunk;
 import org.jclouds.logging.Logger;
 import org.jclouds.rest.annotations.ParamValidators;
 
@@ -322,6 +323,13 @@ public class KineticStorageStrategyImpl implements LocalStorageStrategy {
       BlobBuilder builder = blobBuilders.get();
       builder.name(key);
       File file = getFileForBlobKey(container, key);
+      long fileLength = file.length();
+      long current = 0;
+      while (current * (KineticConstants.PROPERTY_CHUNK_SIZE_KB - KineticConstants.PROPERTY_CHUNK_HEADER_SIZE_BYTES) < fileLength) {
+         Chunk chunk = new Chunk();
+         chunk.setMetadata(file.getName());
+         chunk.processChunk();
+      }
       ByteSource byteSource;
 
       if (getDirectoryBlobSuffix(key) != null) {
