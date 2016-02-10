@@ -14,10 +14,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.jclouds.filesystem;
+package org.jclouds.kinetic;
 
 import static com.google.common.io.BaseEncoding.base16;
-import static org.jclouds.filesystem.util.Utils.isMacOSX;
+import static org.jclouds.kinetic.util.Utils.isMacOSX;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
@@ -47,9 +47,9 @@ import org.jclouds.blobstore.domain.StorageMetadata;
 import org.jclouds.blobstore.domain.StorageType;
 import org.jclouds.blobstore.options.GetOptions;
 import org.jclouds.blobstore.options.ListContainerOptions;
-import org.jclouds.filesystem.reference.FilesystemConstants;
-import org.jclouds.filesystem.util.Utils;
-import org.jclouds.filesystem.utils.TestUtils;
+import org.jclouds.kinetic.reference.KineticConstants;
+import org.jclouds.kinetic.util.Utils;
+import org.jclouds.kinetic.utils.TestUtils;
 import org.jclouds.http.HttpRequest;
 import org.jclouds.io.ByteStreams2;
 import org.jclouds.io.Payload;
@@ -69,15 +69,15 @@ import com.google.common.io.Files;
 import com.google.common.util.concurrent.Uninterruptibles;
 import com.google.inject.CreationException;
 
-@Test(groups = "unit", testName = "FilesystemBlobStoreTest", singleThreaded = true)
-public class FilesystemBlobStoreTest {
+@Test(groups = "unit", testName = "KineticBlobStoreTest", singleThreaded = true)
+public class KineticBlobStoreTest {
 
     private static final String CONTAINER_NAME = "fun-blobstore-test";
     private static final String TARGET_CONTAINER_NAME = TestUtils.TARGET_BASE_DIR + CONTAINER_NAME;
     private static final String LOGGING_CONFIG_KEY = "java.util.logging.config.file";
     private static final String LOGGING_CONFIG_VALUE = "src/main/resources/logging.properties";
 
-    private static final String PROVIDER = "filesystem";
+    private static final String PROVIDER = "kinetic";
 
     static {
         System.setProperty(LOGGING_CONFIG_KEY, LOGGING_CONFIG_VALUE);
@@ -88,10 +88,10 @@ public class FilesystemBlobStoreTest {
 
     @BeforeMethod
     protected void setUp() throws Exception {
-        // create context for filesystem container
+        // create context for kinetic container
         Properties prop = new Properties();
-        prop.setProperty(FilesystemConstants.PROPERTY_BASEDIR, TestUtils.TARGET_BASE_DIR);
-        prop.setProperty(FilesystemConstants.PROPERTY_AUTO_DETECT_CONTENT_TYPE, "false");
+        prop.setProperty(KineticConstants.PROPERTY_BASEDIR, TestUtils.TARGET_BASE_DIR);
+        prop.setProperty(KineticConstants.PROPERTY_AUTO_DETECT_CONTENT_TYPE, "false");
         context = ContextBuilder.newBuilder(PROVIDER).overrides(prop).build(BlobStoreContext.class);
         // create a container in the default location
         blobStore = context.getBlobStore();
@@ -120,7 +120,7 @@ public class FilesystemBlobStoreTest {
         // no base directory declared in properties
         try {
             Properties props = new Properties();
-            props.setProperty(FilesystemConstants.PROPERTY_BASEDIR, null);
+            props.setProperty(KineticConstants.PROPERTY_BASEDIR, null);
             context = ContextBuilder.newBuilder(PROVIDER).overrides(props).build(BlobStoreContext.class);
             fail("No error if base directory is null in the option");
         } catch (NullPointerException e) {

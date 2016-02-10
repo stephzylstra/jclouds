@@ -14,25 +14,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.jclouds.filesystem.predicates.validators.internal;
+package org.jclouds.kinetic.predicates.validators.internal;
 
 import static org.testng.Assert.fail;
 
 import java.io.File;
 
-import org.jclouds.filesystem.predicates.validators.FilesystemBlobKeyValidator;
+import org.jclouds.kinetic.predicates.validators.KineticBlobKeyValidator;
 import org.testng.annotations.Test;
 
 
 /**
- * Test class for {@link FilesystemBlobKeyValidator } class
+ * Test class for {@link KineticBlobKeyValidator } class
  */
-@Test(groups = "unit", testName = "filesystem.FilesystemBlobKeyValidatorTest")
-public class FilesystemBlobKeyValidatorTest {
+@Test(groups = "unit", testName = "kinetic.KineticBlobKeyValidatorTest")
+public class KineticBlobKeyValidatorTest {
 
     @Test
     public void testNamesValidity() {
-        FilesystemBlobKeyValidator validator = new FilesystemBlobKeyValidatorImpl();
+        KineticBlobKeyValidator validator = new KineticBlobKeyValidatorImpl();
 
         validator.validate("all.img");
         validator.validate("all" + File.separator + "is" + File.separator + "" + "ok");
@@ -40,7 +40,7 @@ public class FilesystemBlobKeyValidatorTest {
 
     @Test
     public void testInvalidNames() {
-        FilesystemBlobKeyValidator validator = new FilesystemBlobKeyValidatorImpl();
+        KineticBlobKeyValidator validator = new KineticBlobKeyValidatorImpl();
 
         try {
             validator.validate("");

@@ -14,27 +14,27 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.jclouds.filesystem.integration;
+package org.jclouds.kinetic.integration;
 
 import java.util.Properties;
 
 import org.jclouds.blobstore.integration.internal.BaseBlobStoreIntegrationTest;
 import org.jclouds.blobstore.integration.internal.BaseServiceIntegrationTest;
-import org.jclouds.filesystem.reference.FilesystemConstants;
-import org.jclouds.filesystem.utils.TestUtils;
+import org.jclouds.kinetic.reference.KineticConstants;
+import org.jclouds.kinetic.utils.TestUtils;
 import org.testng.annotations.Test;
 
-@Test(groups = { "integration", "live" }, testName = "blobstore.FilesystemServiceIntegrationTest")
-public class FilesystemServiceIntegrationTest extends BaseServiceIntegrationTest {
-   public FilesystemServiceIntegrationTest() {
-      provider = "filesystem";
+@Test(groups = { "integration", "live" }, testName = "blobstore.KineticServiceIntegrationTest")
+public class KineticServiceIntegrationTest extends BaseServiceIntegrationTest {
+   public KineticServiceIntegrationTest() {
+      provider = "kinetic";
       BaseBlobStoreIntegrationTest.SANITY_CHECK_RETURNED_BUCKET_NAME = true;
    }
 
    @Override
    protected Properties setupProperties() {
       Properties props = super.setupProperties();
-      props.setProperty(FilesystemConstants.PROPERTY_BASEDIR, TestUtils.TARGET_BASE_DIR);
+      props.setProperty(KineticConstants.PROPERTY_BASEDIR, TestUtils.TARGET_BASE_DIR);
       return props;
    }
 }

@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.jclouds.filesystem.utils;
+package org.jclouds.kinetic.utils;
 
 import static org.jclouds.utils.TestUtils.randomByteSource;
 import static org.testng.Assert.assertFalse;
@@ -27,7 +27,7 @@ import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
 
-import org.jclouds.filesystem.util.Utils;
+import org.jclouds.kinetic.util.Utils;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterators;

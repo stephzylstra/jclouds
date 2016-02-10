@@ -14,15 +14,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.jclouds.filesystem;
+package org.jclouds.kinetic;
 
 import org.jclouds.blobstore.internal.BaseBlobStoreApiMetadataTest;
 import org.testng.annotations.Test;
 
-@Test(groups = "unit", testName = "FilesystemApiMetadataTest")
-public class FilesystemApiMetadataTest extends BaseBlobStoreApiMetadataTest {
+@Test(groups = "unit", testName = "KineticApiMetadataTest")
+public class KineticApiMetadataTest extends BaseBlobStoreApiMetadataTest {
 
-   public FilesystemApiMetadataTest() {
-      super(new FilesystemApiMetadata());
+   public KineticApiMetadataTest() {
+      super(new KineticApiMetadata());
    }
 }

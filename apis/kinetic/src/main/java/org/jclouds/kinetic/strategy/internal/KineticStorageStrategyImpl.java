@@ -366,7 +366,7 @@ public class KineticStorageStrategyImpl implements LocalStorageStrategy {
             for (String attribute : attributes) {
                if (!attribute.startsWith(XATTR_USER_METADATA_PREFIX)) {
                   continue;
-               }
+            }
                String value = readStringAttributeIfPresent(view, attributes, attribute);
                userMetadata.put(attribute.substring(XATTR_USER_METADATA_PREFIX.length()), value);
             }
@@ -898,7 +898,7 @@ public class KineticStorageStrategyImpl implements LocalStorageStrategy {
       return new String(buf.array(), StandardCharsets.UTF_8);
    }
 
-   /** Write a kinetic attribute, if its value is non-null. */
+   /** Write an kinetic attribute, if its value is non-null. */
    private static void writeStringAttributeIfPresent(UserDefinedFileAttributeView view, String name, String value) throws IOException {
       if (value != null) {
          view.write(name, ByteBuffer.wrap(value.getBytes(StandardCharsets.UTF_8)));

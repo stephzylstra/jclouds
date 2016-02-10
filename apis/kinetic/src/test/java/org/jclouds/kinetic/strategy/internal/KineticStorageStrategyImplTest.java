@@ -14,9 +14,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.jclouds.filesystem.strategy.internal;
+package org.jclouds.kinetic.strategy.internal;
 
-import static org.jclouds.filesystem.util.Utils.isMacOSX;
+import static org.jclouds.kinetic.util.Utils.isMacOSX;
 import static org.jclouds.utils.TestUtils.randomByteSource;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
@@ -41,9 +41,9 @@ import org.jclouds.blobstore.domain.ContainerAccess;
 import org.jclouds.blobstore.domain.internal.BlobBuilderImpl;
 import org.jclouds.blobstore.options.ListContainerOptions;
 import org.jclouds.domain.Location;
-import org.jclouds.filesystem.predicates.validators.internal.FilesystemBlobKeyValidatorImpl;
-import org.jclouds.filesystem.predicates.validators.internal.FilesystemContainerNameValidatorImpl;
-import org.jclouds.filesystem.utils.TestUtils;
+import org.jclouds.kinetic.predicates.validators.internal.KineticBlobKeyValidatorImpl;
+import org.jclouds.kinetic.predicates.validators.internal.KineticContainerNameValidatorImpl;
+import org.jclouds.kinetic.utils.TestUtils;
 import org.jclouds.io.payloads.FilePayload;
 import org.jclouds.io.payloads.InputStreamPayload;
 import org.jclouds.util.Throwables2;
@@ -61,10 +61,10 @@ import com.google.common.io.Files;
 import com.google.common.util.concurrent.Uninterruptibles;
 
 /**
- * Test class for {@link FilesystemStorageStrategyImpl } class
+ * Test class for {@link KineticStorageStrategyImpl } class
  */
-@Test(groups = "unit", testName = "filesystem.FilesystemBlobUtilsTest", sequential = true)
-public class FilesystemStorageStrategyImplTest {
+@Test(groups = "unit", testName = "kinetic.KineticBlobUtilsTest", sequential = true)
+public class KineticStorageStrategyImplTest {
    private static final String CONTAINER_NAME = "funambol-test";
    private static final String TARGET_CONTAINER_NAME = TestUtils.TARGET_BASE_DIR + CONTAINER_NAME;
 
@@ -83,17 +83,17 @@ public class FilesystemStorageStrategyImplTest {
       System.setProperty(LOGGING_CONFIG_KEY, LOGGING_CONFIG_VALUE);
    }
 
-   private FilesystemStorageStrategyImpl storageStrategy;
+   private KineticStorageStrategyImpl storageStrategy;
 
    @BeforeMethod
    protected void setUp() throws Exception {
-      storageStrategy = new FilesystemStorageStrategyImpl(new Provider<BlobBuilder>() {
+      storageStrategy = new KineticStorageStrategyImpl(new Provider<BlobBuilder>() {
          @Override
          public BlobBuilder get() {
             return new BlobBuilderImpl();
          }
 
-      }, TestUtils.TARGET_BASE_DIR, false, new FilesystemContainerNameValidatorImpl(), new FilesystemBlobKeyValidatorImpl(), defaultLocation);
+      }, TestUtils.TARGET_BASE_DIR, false, new KineticContainerNameValidatorImpl(), new KineticBlobKeyValidatorImpl(), defaultLocation);
       TestUtils.cleanDirectoryContent(TestUtils.TARGET_BASE_DIR);
       TestUtils.createResources();
    }
@@ -386,13 +386,13 @@ public class FilesystemStorageStrategyImplTest {
 
    @Test(dataProvider = "ignoreOnMacOSX")
    public void testGetBlobContentType_AutoDetect_True() throws IOException {
-      FilesystemStorageStrategyImpl storageStrategyAutoDetectContentType = new FilesystemStorageStrategyImpl(
+      KineticStorageStrategyImpl storageStrategyAutoDetectContentType = new KineticStorageStrategyImpl(
           new Provider<BlobBuilder>() {
              @Override
              public BlobBuilder get() {
                 return new BlobBuilderImpl();
              }
-          }, TestUtils.TARGET_BASE_DIR, true, new FilesystemContainerNameValidatorImpl(), new FilesystemBlobKeyValidatorImpl(), defaultLocation);
+          }, TestUtils.TARGET_BASE_DIR, true, new KineticContainerNameValidatorImpl(), new KineticBlobKeyValidatorImpl(), defaultLocation);
 
       String blobKey = TestUtils.createRandomBlobKey("file-", ".jpg");
       TestUtils.createBlobsInContainer(CONTAINER_NAME, blobKey);
@@ -521,13 +521,13 @@ public class FilesystemStorageStrategyImplTest {
       String absoluteContainerPath = absoluteBasePath + CONTAINER_NAME + FS;
 
       // create storageStrategy with an absolute path
-      FilesystemStorageStrategyImpl storageStrategyAbsolute = new FilesystemStorageStrategyImpl(
+      KineticStorageStrategyImpl storageStrategyAbsolute = new KineticStorageStrategyImpl(
                new Provider<BlobBuilder>() {
                   @Override
                   public BlobBuilder get() {
                      return new BlobBuilderImpl();
                   }
-               }, absoluteBasePath, false, new FilesystemContainerNameValidatorImpl(), new FilesystemBlobKeyValidatorImpl(), defaultLocation);
+               }, absoluteBasePath, false, new KineticContainerNameValidatorImpl(), new KineticBlobKeyValidatorImpl(), defaultLocation);
       TestUtils.cleanDirectoryContent(absoluteContainerPath);
 
       String blobKey;

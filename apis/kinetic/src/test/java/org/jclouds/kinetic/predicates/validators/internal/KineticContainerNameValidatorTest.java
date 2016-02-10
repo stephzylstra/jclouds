@@ -14,32 +14,32 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.jclouds.filesystem.predicates.validators.internal;
+package org.jclouds.kinetic.predicates.validators.internal;
 
 import static org.testng.Assert.fail;
 
 import java.io.File;
 
-import org.jclouds.filesystem.predicates.validators.FilesystemContainerNameValidator;
+import org.jclouds.kinetic.predicates.validators.KineticContainerNameValidator;
 import org.testng.annotations.Test;
 
 
 /**
- * Test class for {@link FilesystemContainerNameValidator } class
+ * Test class for {@link KineticContainerNameValidator } class
  */
-@Test(groups = "unit", testName = "filesystem.FilesystemContainerNameValidatorTest")
-public class FilesystemContainerNameValidatorTest {
+@Test(groups = "unit", testName = "kinetic.KineticContainerNameValidatorTest")
+public class KineticContainerNameValidatorTest {
 
     @Test
     public void testNamesValidity() {
-        FilesystemContainerNameValidator validator = new FilesystemContainerNameValidatorImpl();
+        KineticContainerNameValidator validator = new KineticContainerNameValidatorImpl();
 
         validator.validate("all.img");
     }
 
     @Test
     public void testInvalidNames() {
-        FilesystemContainerNameValidator validator = new FilesystemContainerNameValidatorImpl();
+        KineticContainerNameValidator validator = new KineticContainerNameValidatorImpl();
 
         try {
             validator.validate("");

@@ -14,10 +14,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.jclouds.filesystem.integration;
+package org.jclouds.kinetic.integration;
 
 import static org.jclouds.blobstore.options.ListContainerOptions.Builder.maxResults;
-import static org.jclouds.filesystem.util.Utils.isMacOSX;
+import static org.jclouds.kinetic.util.Utils.isMacOSX;
 import static org.testng.Assert.assertEquals;
 
 import java.io.IOException;
@@ -34,8 +34,8 @@ import org.jclouds.blobstore.domain.PageSet;
 import org.jclouds.blobstore.domain.StorageMetadata;
 import org.jclouds.blobstore.integration.internal.BaseBlobStoreIntegrationTest;
 import org.jclouds.blobstore.integration.internal.BaseContainerIntegrationTest;
-import org.jclouds.filesystem.reference.FilesystemConstants;
-import org.jclouds.filesystem.utils.TestUtils;
+import org.jclouds.kinetic.reference.KineticConstants;
+import org.jclouds.kinetic.utils.TestUtils;
 import org.testng.SkipException;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
@@ -43,17 +43,17 @@ import org.testng.annotations.Test;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
 
-@Test(groups = { "integration", "live" }, testName = "blobstore.FilesystemContainerIntegrationTest")
-public class FilesystemContainerIntegrationTest extends BaseContainerIntegrationTest {
-   public FilesystemContainerIntegrationTest() {
-      provider = "filesystem";
+@Test(groups = { "integration", "live" }, testName = "blobstore.KineticContainerIntegrationTest")
+public class KineticContainerIntegrationTest extends BaseContainerIntegrationTest {
+   public KineticContainerIntegrationTest() {
+      provider = "kinetic";
       BaseBlobStoreIntegrationTest.SANITY_CHECK_RETURNED_BUCKET_NAME = true;
    }
 
    @Override
    protected Properties setupProperties() {
       Properties props = super.setupProperties();
-      props.setProperty(FilesystemConstants.PROPERTY_BASEDIR, TestUtils.TARGET_BASE_DIR);
+      props.setProperty(KineticConstants.PROPERTY_BASEDIR, TestUtils.TARGET_BASE_DIR);
       return props;
    }
 
@@ -189,6 +189,6 @@ public class FilesystemContainerIntegrationTest extends BaseContainerIntegration
    @Override
    @Test(groups = { "integration", "live" })
    public void testSetContainerAccess() throws Exception {
-      throw new SkipException("filesystem does not support anonymous access");
+      throw new SkipException("kinetic does not support anonymous access");
    }
 }

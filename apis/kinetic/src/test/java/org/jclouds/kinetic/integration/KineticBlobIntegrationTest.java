@@ -14,9 +14,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.jclouds.filesystem.integration;
+package org.jclouds.kinetic.integration;
 
-import static org.jclouds.filesystem.util.Utils.isMacOSX;
+import static org.jclouds.kinetic.util.Utils.isMacOSX;
 
 import java.io.IOException;
 import java.util.Map;
@@ -26,22 +26,22 @@ import org.jclouds.blobstore.domain.Blob;
 import org.jclouds.blobstore.domain.BlobMetadata;
 import org.jclouds.blobstore.integration.internal.BaseBlobIntegrationTest;
 import org.jclouds.blobstore.integration.internal.BaseBlobStoreIntegrationTest;
-import org.jclouds.filesystem.reference.FilesystemConstants;
-import org.jclouds.filesystem.utils.TestUtils;
+import org.jclouds.kinetic.reference.KineticConstants;
+import org.jclouds.kinetic.utils.TestUtils;
 import org.testng.annotations.Test;
 import org.testng.SkipException;
 
-@Test(groups = { "integration" }, singleThreaded = true,  testName = "blobstore.FilesystemBlobIntegrationTest")
-public class FilesystemBlobIntegrationTest extends BaseBlobIntegrationTest {
-   public FilesystemBlobIntegrationTest() {
-      provider = "filesystem";
+@Test(groups = { "integration" }, singleThreaded = true,  testName = "blobstore.KineticBlobIntegrationTest")
+public class KineticBlobIntegrationTest extends BaseBlobIntegrationTest {
+   public KineticBlobIntegrationTest() {
+      provider = "kinetic";
       BaseBlobStoreIntegrationTest.SANITY_CHECK_RETURNED_BUCKET_NAME = true;
    }
 
    @Override
    protected Properties setupProperties() {
       Properties props = super.setupProperties();
-      props.setProperty(FilesystemConstants.PROPERTY_BASEDIR, TestUtils.TARGET_BASE_DIR);
+      props.setProperty(KineticConstants.PROPERTY_BASEDIR, TestUtils.TARGET_BASE_DIR);
       return props;
    }
 
@@ -80,7 +80,7 @@ public class FilesystemBlobIntegrationTest extends BaseBlobIntegrationTest {
       super.testCreateBlobWithExpiry();
    }
 
-   /* Java on OS X does not support extended attributes, which the filesystem backend
+   /* Java on OS X does not support extended attributes, which the kinetic backend
     * uses to implement user metadata */
    @Override
    protected void checkUserMetadata(Map<String, String> userMetadata1, Map<String, String> userMetadata2) {
@@ -91,6 +91,6 @@ public class FilesystemBlobIntegrationTest extends BaseBlobIntegrationTest {
 
    @Override
    public void testSetBlobAccess() throws Exception {
-      throw new SkipException("filesystem does not support anonymous access");
+      throw new SkipException("kinetic does not support anonymous access");
    }
 }

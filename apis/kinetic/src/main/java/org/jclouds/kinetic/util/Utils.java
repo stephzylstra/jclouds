@@ -16,7 +16,7 @@
  */
 package org.jclouds.kinetic.util;
 
-import static java.nio.file.Kinetics.getDefault;
+import static java.nio.file.FileSystems.getDefault;
 
 import java.io.BufferedReader;
 import java.io.File;
