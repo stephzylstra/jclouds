@@ -329,7 +329,7 @@ public class KineticStorageStrategyImpl implements LocalStorageStrategy {
           Chunk chunk = new Chunk();
           chunk.setMetadata(file.getName());
           chunk.processChunk();
-          current += (KineticConstants.PROPERTY_CHUNK_SIZE_KB - KineticConstants.PROPERTY_CHUNK_HEADER_SIZE_KB);
+          current += KineticConstants.PROPERTY_CHUNK_SIZE_KB - KineticConstants.PROPERTY_CHUNK_HEADER_SIZE_KB;
           logger.debug("Completed %d/%d for file [%d]\n", current, fileLength, current / fileLength);
       }
       ByteSource byteSource;
