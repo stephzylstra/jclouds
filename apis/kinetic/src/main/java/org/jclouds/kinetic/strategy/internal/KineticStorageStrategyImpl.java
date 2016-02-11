@@ -325,10 +325,12 @@ public class KineticStorageStrategyImpl implements LocalStorageStrategy {
       File file = getFileForBlobKey(container, key);
       long fileLength = file.length();
       long current = 0;
-      while (current * (KineticConstants.PROPERTY_CHUNK_SIZE_KB - KineticConstants.PROPERTY_CHUNK_HEADER_SIZE_BYTES) < fileLength) {
-         Chunk chunk = new Chunk();
-         chunk.setMetadata(file.getName());
-         chunk.processChunk();
+      while (current * (KineticConstants.PROPERTY_CHUNK_SIZE_KB - KineticConstants.PROPERTY_CHUNK_HEADER_SIZE_KB) < fileLength) {
+          Chunk chunk = new Chunk();
+          chunk.setMetadata(file.getName());
+          chunk.processChunk();
+          current += (KineticConstants.PROPERTY_CHUNK_SIZE_KB - KineticConstants.PROPERTY_CHUNK_HEADER_SIZE_KB);
+          logger.debug("Completed %d/%d for file [%d]\n", current, fileLength, current / fileLength);
       }
       ByteSource byteSource;
 

@@ -30,8 +30,8 @@ public final class KineticConstants {
     /** Specify the size of a chunk, in kilobytes, including header */
     public static final Integer PROPERTY_CHUNK_SIZE_KB = 1024; // 1MB
 
-    /** Specify the size of a chunk's header, in bytes */
-    public static final Integer PROPERTY_CHUNK_HEADER_SIZE_BYTES = 1024; //1 KB
+    /** Specify the size of a chunk's header, in kilobytes */
+    public static final Integer PROPERTY_CHUNK_HEADER_SIZE_KB = 1; //1 KB
 
     private KineticConstants() {
         throw new AssertionError("intentionally unimplemented");
