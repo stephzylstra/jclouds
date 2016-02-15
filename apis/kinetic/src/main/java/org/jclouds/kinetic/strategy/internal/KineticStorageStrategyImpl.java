@@ -39,11 +39,7 @@ import java.nio.file.Path;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.nio.file.attribute.PosixFilePermission;
 import java.nio.file.attribute.UserDefinedFileAttributeView;
-import java.util.Collection;
-import java.util.Date;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 
 import javax.annotation.Resource;
 import javax.inject.Inject;
@@ -318,94 +314,117 @@ public class KineticStorageStrategyImpl implements LocalStorageStrategy {
       return blobNames;
    }
 
+    private Blob createBlobFromByteSource(final String container, final String key, final ByteSource byteSource) {
+        BlobBuilder builder = blobBuilders.get();
+        builder.name(key);
+        File file = getFileForBlobKey(container, key);
+        try {
+            String cacheControl = null;
+            String contentDisposition = null;
+            String contentEncoding = null;
+            String contentLanguage = null;
+            String contentType = null;
+            HashCode hashCode = null;
+            Date expires = null;
+            ImmutableMap.Builder<String, String> userMetadata = ImmutableMap.builder();
+
+            UserDefinedFileAttributeView view = getUserDefinedFileAttributeView(file.toPath());
+            if (view != null) {
+                Set<String> attributes = ImmutableSet.copyOf(view.list());
+
+                cacheControl = readStringAttributeIfPresent(view, attributes, XATTR_CACHE_CONTROL);
+                contentDisposition = readStringAttributeIfPresent(view, attributes, XATTR_CONTENT_DISPOSITION);
+                contentEncoding = readStringAttributeIfPresent(view, attributes, XATTR_CONTENT_ENCODING);
+                contentLanguage = readStringAttributeIfPresent(view, attributes, XATTR_CONTENT_LANGUAGE);
+                contentType = readStringAttributeIfPresent(view, attributes, XATTR_CONTENT_TYPE);
+                if (contentType == null && autoDetectContentType) {
+                    contentType = probeContentType(file.toPath());
+                }
+                if (attributes.contains(XATTR_CONTENT_MD5)) {
+                    ByteBuffer buf = ByteBuffer.allocate(view.size(XATTR_CONTENT_MD5));
+                    view.read(XATTR_CONTENT_MD5, buf);
+                    hashCode = HashCode.fromBytes(buf.array());
+                }
+                if (attributes.contains(XATTR_EXPIRES)) {
+                    ByteBuffer buf = ByteBuffer.allocate(view.size(XATTR_EXPIRES));
+                    view.read(XATTR_EXPIRES, buf);
+                    buf.flip();
+                    expires = new Date(buf.asLongBuffer().get());
+                }
+                for (String attribute : attributes) {
+                    if (!attribute.startsWith(XATTR_USER_METADATA_PREFIX)) {
+                        continue;
+                    }
+                    String value = readStringAttributeIfPresent(view, attributes, attribute);
+                    userMetadata.put(attribute.substring(XATTR_USER_METADATA_PREFIX.length()), value);
+                }
+
+                builder.payload(byteSource)
+                        .cacheControl(cacheControl)
+                        .contentDisposition(contentDisposition)
+                        .contentEncoding(contentEncoding)
+                        .contentLanguage(contentLanguage)
+                        .contentLength(byteSource.size())
+                        .contentMD5(hashCode)
+                        .contentType(contentType)
+                        .expires(expires)
+                        .userMetadata(userMetadata.build());
+            } else {
+                builder.payload(byteSource)
+                        .contentLength(byteSource.size())
+                        .contentMD5(byteSource.hash(Hashing.md5()).asBytes());
+            }
+        } catch (IOException e) {
+            throw Throwables.propagate(e);
+        }
+        Blob blob = builder.build();
+        blob.getMetadata().setContainer(container);
+        blob.getMetadata().setLastModified(new Date(file.lastModified()));
+        blob.getMetadata().setSize(file.length());
+        if (blob.getPayload().getContentMetadata().getContentMD5() != null)
+            blob.getMetadata().setETag(base16().lowerCase().encode(blob.getPayload().getContentMetadata().getContentMD5()));
+        return blob;
+    }
+    
+    private Blob getChunkedBlob(final String container, final String key, final long chunkId) {
+        BlobBuilder builder = blobBuilders.get();
+        builder.name(key);
+        File file = getFileForBlobKey(container, key);
+        ByteSource byteSource;
+
+        if (getDirectoryBlobSuffix(key) != null) {
+            logger.debug("%s - %s is a directory", container, key);
+            byteSource = ByteSource.empty();
+        } else {
+            byteSource = Files.asByteSource(file)
+                    .slice(chunkId, KineticConstants.PROPERTY_CHUNK_SIZE_BYTES - KineticConstants.PROPERTY_CHUNK_HEADER_SIZE_BYTES);
+        }
+
+        return this.createBlobFromByteSource(container, key, byteSource);
+    }
+
    @Override
    public Blob getBlob(final String container, final String key) {
       BlobBuilder builder = blobBuilders.get();
       builder.name(key);
       File file = getFileForBlobKey(container, key);
+      Map<Long, Blob> blobs = new TreeMap<Long, Blob>();
       long fileLength = file.length();
-      long current = 0;
-      while (current * (KineticConstants.PROPERTY_CHUNK_SIZE_KB - KineticConstants.PROPERTY_CHUNK_HEADER_SIZE_KB) < fileLength) {
+      long currentByte = 0;
+      while (currentByte < fileLength) {
           Chunk chunk = new Chunk();
           chunk.setMetadata(file.getName());
           chunk.processChunk();
-          current += KineticConstants.PROPERTY_CHUNK_SIZE_KB - KineticConstants.PROPERTY_CHUNK_HEADER_SIZE_KB;
-          logger.debug("Completed %d/%d for file [%d]\n", current, fileLength, current / fileLength);
+          Blob chunkBlob = this.getChunkedBlob(container, key, currentByte);
+          blobs.put(currentByte, chunkBlob);
+          currentByte += KineticConstants.PROPERTY_CHUNK_SIZE_BYTES - KineticConstants.PROPERTY_CHUNK_HEADER_SIZE_BYTES;
       }
-      ByteSource byteSource;
-
-      if (getDirectoryBlobSuffix(key) != null) {
-         logger.debug("%s - %s is a directory", container, key);
-         byteSource = ByteSource.empty();
-      } else {
-         byteSource = Files.asByteSource(file);
-      }
-      try {
-         String cacheControl = null;
-         String contentDisposition = null;
-         String contentEncoding = null;
-         String contentLanguage = null;
-         String contentType = null;
-         HashCode hashCode = null;
-         Date expires = null;
-         ImmutableMap.Builder<String, String> userMetadata = ImmutableMap.builder();
-
-         UserDefinedFileAttributeView view = getUserDefinedFileAttributeView(file.toPath());
-         if (view != null) {
-            Set<String> attributes = ImmutableSet.copyOf(view.list());
-
-            cacheControl = readStringAttributeIfPresent(view, attributes, XATTR_CACHE_CONTROL);
-            contentDisposition = readStringAttributeIfPresent(view, attributes, XATTR_CONTENT_DISPOSITION);
-            contentEncoding = readStringAttributeIfPresent(view, attributes, XATTR_CONTENT_ENCODING);
-            contentLanguage = readStringAttributeIfPresent(view, attributes, XATTR_CONTENT_LANGUAGE);
-            contentType = readStringAttributeIfPresent(view, attributes, XATTR_CONTENT_TYPE);
-            if (contentType == null && autoDetectContentType) {
-               contentType = probeContentType(file.toPath());
-            }
-            if (attributes.contains(XATTR_CONTENT_MD5)) {
-               ByteBuffer buf = ByteBuffer.allocate(view.size(XATTR_CONTENT_MD5));
-               view.read(XATTR_CONTENT_MD5, buf);
-               hashCode = HashCode.fromBytes(buf.array());
-            }
-            if (attributes.contains(XATTR_EXPIRES)) {
-               ByteBuffer buf = ByteBuffer.allocate(view.size(XATTR_EXPIRES));
-               view.read(XATTR_EXPIRES, buf);
-               buf.flip();
-               expires = new Date(buf.asLongBuffer().get());
-            }
-            for (String attribute : attributes) {
-               if (!attribute.startsWith(XATTR_USER_METADATA_PREFIX)) {
-                  continue;
-            }
-               String value = readStringAttributeIfPresent(view, attributes, attribute);
-               userMetadata.put(attribute.substring(XATTR_USER_METADATA_PREFIX.length()), value);
-            }
-
-            builder.payload(byteSource)
-               .cacheControl(cacheControl)
-               .contentDisposition(contentDisposition)
-               .contentEncoding(contentEncoding)
-               .contentLanguage(contentLanguage)
-               .contentLength(byteSource.size())
-               .contentMD5(hashCode)
-               .contentType(contentType)
-               .expires(expires)
-               .userMetadata(userMetadata.build());
-         } else {
-            builder.payload(byteSource)
-               .contentLength(byteSource.size())
-               .contentMD5(byteSource.hash(Hashing.md5()).asBytes());
-         }
-      } catch (IOException e) {
-         throw Throwables.propagate(e);
-      }
-      Blob blob = builder.build();
-      blob.getMetadata().setContainer(container);
-      blob.getMetadata().setLastModified(new Date(file.lastModified()));
-      blob.getMetadata().setSize(file.length());
-      if (blob.getPayload().getContentMetadata().getContentMD5() != null)
-         blob.getMetadata().setETag(base16().lowerCase().encode(blob.getPayload().getContentMetadata().getContentMD5()));
-      return blob;
+       List<ByteSource> byteSources = new ArrayList<ByteSource>();
+       for(Map.Entry<Long, Blob> entry : blobs.entrySet()) {
+           byteSources.add((ByteSource)(entry.getValue().getPayload()));
+       }
+       ByteSource finalByteSource = ByteSource.concat(byteSources);
+       return createBlobFromByteSource(container, key, finalByteSource);
    }
 
    private void writeCommonMetadataAttr(UserDefinedFileAttributeView view, Blob blob) throws IOException {

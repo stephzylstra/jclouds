@@ -28,10 +28,10 @@ public final class KineticConstants {
     public static final String PROPERTY_AUTO_DETECT_CONTENT_TYPE = "jclouds.kinetic.auto-detect-content-type";
 
     /** Specify the size of a chunk, in kilobytes, including header */
-    public static final Integer PROPERTY_CHUNK_SIZE_KB = 1024; // 1MB
+    public static final Integer PROPERTY_CHUNK_SIZE_BYTES = 1048576; // 1MB
 
     /** Specify the size of a chunk's header, in kilobytes */
-    public static final Integer PROPERTY_CHUNK_HEADER_SIZE_KB = 1; //1 KB
+    public static final Integer PROPERTY_CHUNK_HEADER_SIZE_BYTES = 4096; // As defined by Kinetic
 
     private KineticConstants() {
         throw new AssertionError("intentionally unimplemented");
