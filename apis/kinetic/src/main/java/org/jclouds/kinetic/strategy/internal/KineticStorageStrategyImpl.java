@@ -397,7 +397,7 @@ public class KineticStorageStrategyImpl implements LocalStorageStrategy {
             byteSource = ByteSource.empty();
         } else {
             byteSource = Files.asByteSource(file)
-                    .slice(chunkId, KineticConstants.PROPERTY_CHUNK_SIZE_BYTES - KineticConstants.PROPERTY_CHUNK_HEADER_SIZE_BYTES);
+                    .slice(chunkId, KineticConstants.PROPERTY_CHUNK_SIZE_BYTES - KineticConstants.PROPERTY_CHUNK_FULL_HEADER_SIZE_BYTES);
         }
 
         return this.createBlobFromByteSource(container, key, byteSource);
@@ -417,7 +417,7 @@ public class KineticStorageStrategyImpl implements LocalStorageStrategy {
           chunk.processChunk();
           Blob chunkBlob = this.getChunkedBlob(container, key, currentByte);
           blobs.put(currentByte, chunkBlob);
-          currentByte += KineticConstants.PROPERTY_CHUNK_SIZE_BYTES - KineticConstants.PROPERTY_CHUNK_HEADER_SIZE_BYTES;
+          currentByte += KineticConstants.PROPERTY_CHUNK_SIZE_BYTES - KineticConstants.PROPERTY_CHUNK_FULL_HEADER_SIZE_BYTES;
       }
        List<ByteSource> byteSources = new ArrayList<ByteSource>();
        for(Map.Entry<Long, Blob> entry : blobs.entrySet()) {
