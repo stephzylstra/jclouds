@@ -27,6 +27,10 @@ public class Chunk {
         /*System.out.println(this.hashCode());*/
     }
 
+    public String getId() {
+        return String.valueOf(this.hashCode());
+    }
+
     public void setMetadata(Object metadata) {
         this.metadata = metadata;
     }

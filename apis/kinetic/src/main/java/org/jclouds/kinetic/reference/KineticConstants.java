@@ -40,14 +40,14 @@ public final class KineticConstants {
 
     /** Specify the company ID - this needs to be recognised by the KDCC on the other end. */
     /** TODO: Read from configuration file */
-    public static final String PROPERTY_COMPANY_HASH_HEADER = "00000000000000000000000000000001";
+    public static final String PROPERTY_COMPANY_HASH_HEADER = "1";
 
     /** Specify the size of the company ID header. */
     public static final Integer PROPERTY_COMPANY_HASH_HEADER_SIZE_BYTES = 32;
 
     /** Specify the application ID - this needs to be recognised by the KDCC on the other end. */
     /** TODO: Read from configuration file */
-    public static final String PROPERTY_APPLICATION_HASH_HEADER = "00000000000000000000000000000001";
+    public static final String PROPERTY_APPLICATION_HASH_HEADER = "1";
 
     /** Specify the size of the application ID header. */
     public static final Integer PROPERTY_APPLICATION_HASH_HEADER_SIZE_BYTES = 32;
@@ -65,7 +65,7 @@ public final class KineticConstants {
     /** Specify the RAID type required. */
     /** TODO: Support RAID configurations other than RAID5. */
     /** TODO: Read this from configuration file. */
-    public static final String PROPERTY_RAID_LEVEL_HEADER = "000RAID5";
+    public static final String PROPERTY_RAID_LEVEL_HEADER = "RAID5";
 
     /** Specify the size of the RAID level header. */
     public static final Integer PROPERTY_RAID_LEVEL_HEADER_SIZE_BYTES = 8;
@@ -74,7 +74,7 @@ public final class KineticConstants {
      *  group. This number must be compatible with the RAID level selected.
      */
     /** TODO: Read this from configuration file. */
-    public static final String PROPERTY_RAID_LENGTH_HEADER = "00000010";
+    public static final String PROPERTY_RAID_LENGTH_HEADER = "10";
 
     /** Specify the size of the RAID length header, in bytes. */
     public static final Integer PROPERTY_RAID_LENGTH_HEADER_SIZE_BYTES = 8;
@@ -89,8 +89,8 @@ public final class KineticConstants {
      */
     public static final Integer PROPERTY_BLOCK_TYPE_HEADER_SIZE_BYTES = 1;
 
-    /** Specify the size of the file-hash header field */
-    public static final Integer PROPERTY_FILE_HASH_HEADER_SIZE_BYTES = 32;
+    /** Specify the size of the content-hash header field */
+    public static final Integer PROPERTY_CONTENT_HASH_HEADER_SIZE_BYTES = 32;
 
     /** Specify the size of the length of this chunk. */
     public static final Integer PROPERTY_CHUNK_LENGTH_HEADER_SIZE_BYTES = 8;
