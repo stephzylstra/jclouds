@@ -16,9 +16,6 @@
  */
 package org.jclouds.kinetic.reference;
 
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-
 /**
  * Common constants used in kinetic provider
  */

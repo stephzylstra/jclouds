@@ -40,7 +40,17 @@ import java.nio.file.Path;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.nio.file.attribute.PosixFilePermission;
 import java.nio.file.attribute.UserDefinedFileAttributeView;
-import java.util.*;
+
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Set;
+import java.util.Date;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.TreeMap;
+import java.util.List;
+import java.util.ArrayList;
+import java.util.UUID;
 
 import javax.annotation.Resource;
 import javax.inject.Inject;
@@ -410,7 +420,7 @@ public class KineticStorageStrategyImpl implements LocalStorageStrategy {
       BlobBuilder builder = blobBuilders.get();
       builder.name(key);
       File file = getFileForBlobKey(container, key);
-      Map<Long, Blob> blobs = new TreeMap<Long, Blob>();
+      TreeMap<Long, Blob> blobs = new TreeMap<Long, Blob>();
       long fileLength = file.length();
       long currentByte = 0;
       while (currentByte < fileLength) {
@@ -422,8 +432,8 @@ public class KineticStorageStrategyImpl implements LocalStorageStrategy {
           currentByte += KineticConstants.PROPERTY_CHUNK_SIZE_BYTES - KineticConstants.PROPERTY_CHUNK_FULL_HEADER_SIZE_BYTES;
       }
        List<ByteSource> byteSources = new ArrayList<ByteSource>();
-       for(Map.Entry<Long, Blob> entry : blobs.entrySet()) {
-           byteSources.add((ByteSource)(entry.getValue().getPayload()));
+       for (Map.Entry<Long, Blob> entry : blobs.entrySet()) {
+           byteSources.add((ByteSource)(entry.getValue().getPayload().getRawContent()));
        }
        ByteSource finalByteSource = ByteSource.concat(byteSources);
        return createBlobFromByteSource(container, key, finalByteSource);
@@ -703,9 +713,9 @@ public class KineticStorageStrategyImpl implements LocalStorageStrategy {
        try {
            headerSizeProperty = KineticConstants.class.getDeclaredField("PROPERTY_" + header + "_HEADER_SIZE_BYTES");
            headerSize = headerSizeProperty.getInt(null);
-       } catch(NoSuchFieldException nsfe) {
+       } catch (NoSuchFieldException nsfe) {
             throw new IllegalArgumentException("Field does not exist");
-       } catch(IllegalAccessException iae) {
+       } catch (IllegalAccessException iae) {
            /* If not specified in config, assume it doesn't need to be padded. */
            headerSize = 0;
        }
