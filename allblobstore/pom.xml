@@ -76,6 +76,11 @@
           <artifactId>filesystem</artifactId>
          <version>${project.version}</version>
        </dependency>
+        <dependency>
+          <groupId>org.apache.jclouds.api</groupId>
+          <artifactId>kinetic</artifactId>
+          <version>${project.version}</version>
+        </dependency>
       </dependencies>
     </profile>
   </profiles>

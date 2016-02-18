@@ -417,6 +417,7 @@ public class KineticStorageStrategyImpl implements LocalStorageStrategy {
 
    @Override
    public Blob getBlob(final String container, final String key) {
+       System.out.println("TIS IS KINETIC");
       BlobBuilder builder = blobBuilders.get();
       builder.name(key);
       File file = getFileForBlobKey(container, key);

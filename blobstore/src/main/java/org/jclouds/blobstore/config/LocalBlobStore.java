@@ -530,6 +530,26 @@ public final class LocalBlobStore implements BlobStore {
          throw new KeyNotFoundException(fromContainer, fromName, "while copying");
       }
 
+      String eTag = maybeQuoteETag(blob.getMetadata().getETag());
+      if (eTag != null) {
+         if (options.ifMatch() != null && !maybeQuoteETag(options.ifMatch()).equals(eTag)) {
+            throw returnResponseException(412);
+         }
+         if (options.ifNoneMatch() != null && maybeQuoteETag(options.ifNoneMatch()).equals(eTag)) {
+            throw returnResponseException(412);
+         }
+      }
+
+      Date lastModified = blob.getMetadata().getLastModified();
+      if (lastModified != null) {
+         if (options.ifModifiedSince() != null && lastModified.compareTo(options.ifModifiedSince()) <= 0) {
+            throw returnResponseException(412);
+         }
+         if (options.ifUnmodifiedSince() != null && lastModified.compareTo(options.ifUnmodifiedSince()) >= 0) {
+            throw returnResponseException(412);
+         }
+      }
+
       InputStream is = null;
       try {
          is = blob.getPayload().openStream();
@@ -541,8 +561,8 @@ public final class LocalBlobStore implements BlobStore {
             builder.contentLength(contentLength);
          }
 
-         if (options.getContentMetadata().isPresent()) {
-            ContentMetadata contentMetadata = options.getContentMetadata().get();
+         ContentMetadata contentMetadata = options.contentMetadata();
+         if (contentMetadata != null) {
             String cacheControl = contentMetadata.getCacheControl();
             if (cacheControl != null) {
                builder.cacheControl(cacheControl);
@@ -570,9 +590,10 @@ public final class LocalBlobStore implements BlobStore {
                    .contentLanguage(metadata.getContentLanguage())
                    .contentType(metadata.getContentType());
          }
-         Optional<Map<String, String>> userMetadata = options.getUserMetadata();
-         if (userMetadata.isPresent()) {
-            builder.userMetadata(userMetadata.get());
+
+         Map<String, String> userMetadata = options.userMetadata();
+         if (userMetadata != null) {
+            builder.userMetadata(userMetadata);
          } else {
             builder.userMetadata(blob.getMetadata().getUserMetadata());
          }

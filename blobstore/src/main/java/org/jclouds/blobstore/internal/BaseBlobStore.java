@@ -23,6 +23,7 @@ import static org.jclouds.util.Predicates2.retry;
 
 import java.io.InputStream;
 import java.io.IOException;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -46,13 +47,16 @@ import org.jclouds.blobstore.strategy.internal.MultipartUploadSlicingAlgorithm;
 import org.jclouds.blobstore.util.BlobUtils;
 import org.jclouds.collect.Memoized;
 import org.jclouds.domain.Location;
+import org.jclouds.http.HttpCommand;
+import org.jclouds.http.HttpRequest;
+import org.jclouds.http.HttpResponse;
+import org.jclouds.http.HttpResponseException;
 import org.jclouds.io.ContentMetadata;
 import org.jclouds.io.Payload;
 import org.jclouds.io.PayloadSlicer;
 import org.jclouds.util.Closeables2;
 
 import com.google.common.annotations.Beta;
-import com.google.common.base.Optional;
 import com.google.common.base.Predicate;
 import com.google.common.base.Supplier;
 import com.google.common.base.Throwables;
@@ -259,6 +263,26 @@ public abstract class BaseBlobStore implements BlobStore {
          throw new KeyNotFoundException(fromContainer, fromName, "while copying");
       }
 
+      String eTag = maybeQuoteETag(blob.getMetadata().getETag());
+      if (eTag != null) {
+         if (options.ifMatch() != null && !options.ifMatch().equals(eTag)) {
+            throw returnResponseException(412);
+         }
+         if (options.ifNoneMatch() != null && options.ifNoneMatch().equals(eTag)) {
+            throw returnResponseException(412);
+         }
+      }
+
+      Date lastModified = blob.getMetadata().getLastModified();
+      if (lastModified != null) {
+         if (options.ifModifiedSince() != null && lastModified.compareTo(options.ifModifiedSince()) <= 0) {
+            throw returnResponseException(412);
+         }
+         if (options.ifUnmodifiedSince() != null && lastModified.compareTo(options.ifUnmodifiedSince()) >= 0) {
+            throw returnResponseException(412);
+         }
+      }
+
       InputStream is = null;
       try {
          is = blob.getPayload().openStream();
@@ -270,8 +294,8 @@ public abstract class BaseBlobStore implements BlobStore {
          }
 
          ContentMetadata metadata;
-         if (options.getContentMetadata().isPresent()) {
-            metadata = options.getContentMetadata().get();
+         if (options.contentMetadata() != null) {
+            metadata = options.contentMetadata();
          } else {
             metadata = blob.getMetadata().getContentMetadata();
          }
@@ -281,9 +305,9 @@ public abstract class BaseBlobStore implements BlobStore {
                .contentLanguage(metadata.getContentLanguage())
                .contentType(metadata.getContentType());
 
-         Optional<Map<String, String>> userMetadata = options.getUserMetadata();
-         if (userMetadata.isPresent()) {
-            builder.userMetadata(userMetadata.get());
+         Map<String, String> userMetadata = options.userMetadata();
+         if (userMetadata != null) {
+            builder.userMetadata(userMetadata);
          } else {
             builder.userMetadata(blob.getMetadata().getUserMetadata());
          }
@@ -311,5 +335,19 @@ public abstract class BaseBlobStore implements BlobStore {
          ++partNumber;
       }
       return completeMultipartUpload(mpu, parts);
+   }
+
+   private static HttpResponseException returnResponseException(int code) {
+      HttpResponse response = HttpResponse.builder().statusCode(code).build();
+      // TODO: bogus endpoint
+      return new HttpResponseException(new HttpCommand(HttpRequest.builder().method("GET").endpoint("http://stub")
+            .build()), response);
+   }
+
+   private static String maybeQuoteETag(String eTag) {
+      if (!eTag.startsWith("\"") && !eTag.endsWith("\"")) {
+         eTag = "\"" + eTag + "\"";
+      }
+      return eTag;
    }
 }
