@@ -93,7 +93,8 @@ public class KineticStorageStrategyImplTest {
             return new BlobBuilderImpl();
          }
 
-      }, TestUtils.TARGET_BASE_DIR, false, new KineticContainerNameValidatorImpl(), new KineticBlobKeyValidatorImpl(), defaultLocation);
+      }, TestUtils.TARGET_BASE_DIR, false, "none", new KineticContainerNameValidatorImpl(),
+              new KineticBlobKeyValidatorImpl(), defaultLocation);
       TestUtils.cleanDirectoryContent(TestUtils.TARGET_BASE_DIR);
       TestUtils.createResources();
    }
@@ -392,7 +393,7 @@ public class KineticStorageStrategyImplTest {
              public BlobBuilder get() {
                 return new BlobBuilderImpl();
              }
-          }, TestUtils.TARGET_BASE_DIR, true, new KineticContainerNameValidatorImpl(), new KineticBlobKeyValidatorImpl(), defaultLocation);
+          }, TestUtils.TARGET_BASE_DIR, true, "none", new KineticContainerNameValidatorImpl(), new KineticBlobKeyValidatorImpl(), defaultLocation);
 
       String blobKey = TestUtils.createRandomBlobKey("file-", ".jpg");
       TestUtils.createBlobsInContainer(CONTAINER_NAME, blobKey);
@@ -527,7 +528,7 @@ public class KineticStorageStrategyImplTest {
                   public BlobBuilder get() {
                      return new BlobBuilderImpl();
                   }
-               }, absoluteBasePath, false, new KineticContainerNameValidatorImpl(), new KineticBlobKeyValidatorImpl(), defaultLocation);
+               }, absoluteBasePath, false, "none", new KineticContainerNameValidatorImpl(), new KineticBlobKeyValidatorImpl(), defaultLocation);
       TestUtils.cleanDirectoryContent(absoluteContainerPath);
 
       String blobKey;

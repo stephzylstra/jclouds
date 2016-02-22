@@ -37,14 +37,14 @@ public final class KineticConstants {
 
     /** Specify the company ID - this needs to be recognised by the KDCC on the other end. */
     /** TODO: Read from configuration file */
-    public static final String PROPERTY_COMPANY_HASH_HEADER = "1";
+    public static final Integer PROPERTY_COMPANY_HASH_HEADER = 1;
 
     /** Specify the size of the company ID header. */
     public static final Integer PROPERTY_COMPANY_HASH_HEADER_SIZE_BYTES = 32;
 
     /** Specify the application ID - this needs to be recognised by the KDCC on the other end. */
     /** TODO: Read from configuration file */
-    public static final String PROPERTY_APPLICATION_HASH_HEADER = "1";
+    public static final Integer PROPERTY_APPLICATION_HASH_HEADER = 1;
 
     /** Specify the size of the application ID header. */
     public static final Integer PROPERTY_APPLICATION_HASH_HEADER_SIZE_BYTES = 32;
@@ -91,6 +91,13 @@ public final class KineticConstants {
 
     /** Specify the size of the length of this chunk. */
     public static final Integer PROPERTY_CHUNK_LENGTH_HEADER_SIZE_BYTES = 8;
+
+    /** Specify the type of encryption used on this KCC. none|AES-128|AES-192|AES-256 */
+    public static final String PROPERTY_ENCRYPTION_ALGORITHM = "jclouds.kinetic.encryption";
+
+    /** Specify the database connection uri required by the Kinetic client. */
+    /** TODO: Read from configuration file. */
+    public static final String PROPERTY_KINETIC_DATABASE_URI = "jdbc:postgresql://localhost/kinetic";
 
     private KineticConstants() {
         throw new AssertionError("intentionally unimplemented");

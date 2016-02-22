@@ -42,6 +42,7 @@ public class KineticBlobIntegrationTest extends BaseBlobIntegrationTest {
    protected Properties setupProperties() {
       Properties props = super.setupProperties();
       props.setProperty(KineticConstants.PROPERTY_BASEDIR, TestUtils.TARGET_BASE_DIR);
+      props.setProperty(KineticConstants.PROPERTY_ENCRYPTION_ALGORITHM, "none");
       return props;
    }
 

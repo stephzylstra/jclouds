@@ -41,15 +41,16 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.nio.file.attribute.PosixFilePermission;
 import java.nio.file.attribute.UserDefinedFileAttributeView;
 
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Set;
-import java.util.Date;
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.TreeMap;
-import java.util.List;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.TreeMap;
 import java.util.UUID;
 
 import javax.annotation.Resource;
@@ -126,12 +127,28 @@ public class KineticStorageStrategyImpl implements LocalStorageStrategy {
    protected final boolean autoDetectContentType;
    protected final KineticContainerNameValidator kineticContainerNameValidator;
    protected final KineticBlobKeyValidator kineticBlobKeyValidator;
+
+
+   protected final String kineticEncryptionAlgorithm;
    private final Supplier<Location> defaultLocation;
+
+    protected KineticStorageStrategyImpl(Provider<BlobBuilder> blobBuilders,
+                                         @Named(KineticConstants.PROPERTY_BASEDIR) String baseDir,
+                                         @Named(KineticConstants.PROPERTY_AUTO_DETECT_CONTENT_TYPE) boolean autoDetectContentType,
+                                         KineticContainerNameValidator kineticContainerNameValidator,
+                                         KineticBlobKeyValidator kineticBlobKeyValidator,
+                                         Supplier<Location> defaultLocation) {
+        /* TODO: Trace down why this constructor is actually needed. */
+        this(blobBuilders, baseDir, autoDetectContentType, null, kineticContainerNameValidator,
+                kineticBlobKeyValidator, defaultLocation);
+    }
 
    @Inject
    protected KineticStorageStrategyImpl(Provider<BlobBuilder> blobBuilders,
                                         @Named(KineticConstants.PROPERTY_BASEDIR) String baseDir,
                                         @Named(KineticConstants.PROPERTY_AUTO_DETECT_CONTENT_TYPE) boolean autoDetectContentType,
+                                        @Named(KineticConstants.PROPERTY_ENCRYPTION_ALGORITHM) String
+                                                   kineticEncryptionAlgorithm,
                                         KineticContainerNameValidator kineticContainerNameValidator,
                                         KineticBlobKeyValidator kineticBlobKeyValidator,
                                         Supplier<Location> defaultLocation) {
@@ -141,8 +158,14 @@ public class KineticStorageStrategyImpl implements LocalStorageStrategy {
       this.kineticContainerNameValidator = checkNotNull(kineticContainerNameValidator,
             "kinetic container name validator");
       this.kineticBlobKeyValidator = checkNotNull(kineticBlobKeyValidator, "kinetic blob key validator");
+      this.kineticEncryptionAlgorithm = checkNotNull(kineticEncryptionAlgorithm, "kinetic encryption algorithm");
       this.defaultLocation = defaultLocation;
+      logger.info("Finished initialising KineticStorageStrategyImpl");
    }
+
+    public String getKineticEncryptionAlgorithm() {
+        return kineticEncryptionAlgorithm;
+    }
 
    @Override
    public boolean containerExists(String container) {
@@ -417,7 +440,6 @@ public class KineticStorageStrategyImpl implements LocalStorageStrategy {
 
    @Override
    public Blob getBlob(final String container, final String key) {
-       System.out.println("TIS IS KINETIC");
       BlobBuilder builder = blobBuilders.get();
       builder.name(key);
       File file = getFileForBlobKey(container, key);
@@ -425,9 +447,19 @@ public class KineticStorageStrategyImpl implements LocalStorageStrategy {
       long fileLength = file.length();
       long currentByte = 0;
       while (currentByte < fileLength) {
-          Chunk chunk = new Chunk();
-          chunk.setMetadata(file.getName());
+          byte[] chunkContents = new byte[0];
+          try {
+              chunkContents = Files.asByteSource(file).slice(currentByte, KineticConstants
+                      .PROPERTY_CHUNK_SIZE_BYTES -
+                      KineticConstants.PROPERTY_CHUNK_FULL_HEADER_SIZE_BYTES).read();
+          } catch (IOException e) {
+              e.printStackTrace();
+          }
+          Chunk chunk = new Chunk(this, 0, currentByte);
+          chunk.setData(chunkContents);
           chunk.processChunk();
+          System.out.printf("Chunk Encoded: %s\n", Arrays.toString(chunk.getData(false)));
+          System.out.printf("Chunk Decoded: %s\n", Arrays.toString(chunk.getData(true)));
           Blob chunkBlob = this.getChunkedBlob(container, key, currentByte);
           blobs.put(currentByte, chunkBlob);
           currentByte += KineticConstants.PROPERTY_CHUNK_SIZE_BYTES - KineticConstants.PROPERTY_CHUNK_FULL_HEADER_SIZE_BYTES;

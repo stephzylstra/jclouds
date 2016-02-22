@@ -92,6 +92,7 @@ public class KineticBlobStoreTest {
         Properties prop = new Properties();
         prop.setProperty(KineticConstants.PROPERTY_BASEDIR, TestUtils.TARGET_BASE_DIR);
         prop.setProperty(KineticConstants.PROPERTY_AUTO_DETECT_CONTENT_TYPE, "false");
+        prop.setProperty(KineticConstants.PROPERTY_ENCRYPTION_ALGORITHM, "none");
         context = ContextBuilder.newBuilder(PROVIDER).overrides(prop).build(BlobStoreContext.class);
         // create a container in the default location
         blobStore = context.getBlobStore();
