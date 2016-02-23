@@ -19,9 +19,15 @@ package org.jclouds.kinetic.util.internal;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 
 import static org.jclouds.kinetic.reference.KineticConstants.PROPERTY_KINETIC_DATABASE_URI;
+import static org.jclouds.kinetic.util.Utils.getChunkHeaders;
+import static org.jclouds.kinetic.util.Utils.numberOfChunksForSize;
 
 /**
  * Created by Steph Zylstra on 22/02/2016.
@@ -61,6 +67,52 @@ public final class KineticDatabaseUtils {
         statement.setString(1, path);
         statement.setLong(2, fileSize);
         statement.execute();
+    }
+
+    public long getFileIdFromDatabase(String path) throws SQLException {
+        String query = "SELECT FileId FROM KineticFiles WHERE FileName = ?";
+        PreparedStatement statement = this.databaseConnection.prepareStatement(query);
+        statement.setString(1, path);
+        ResultSet fileIdResult = statement.executeQuery();
+        long fileId = -1;
+        if (fileIdResult.next()) {
+            fileId = fileIdResult.getLong(1);
+        }
+        return fileId;
+    }
+
+    public List<String> getFileChunkKeysFromDatabase(String path) throws SQLException {
+        String fileSizeQuery = "SELECT FileSize FROM KineticFiles WHERE FileName = '?'";
+        PreparedStatement statement = this.databaseConnection.prepareStatement(fileSizeQuery);
+        statement.setString(1, path);
+        ResultSet fileSizeResult = statement.executeQuery();
+        long fileSize = -1;
+        long fileId = getFileIdFromDatabase(path);
+        if (fileSizeResult.next()) {
+            fileSize = fileSizeResult.getLong(2);
+        }
+        int numChunks = numberOfChunksForSize(fileSize);
+        List<String> keys = new ArrayList<>();
+        for (int i = 0; i < numChunks; i++) {
+            Map<String, String> headers = getChunkHeaders(path, i);
+            StringBuilder key = new StringBuilder();
+            for (Map.Entry<String, String> entry: headers.entrySet()) {
+                key.append(entry.getValue());
+            }
+            keys.add(key.toString());
+        }
+        return keys;
+    }
+
+    public byte[] getChunkFromDatabase(String chunkKey) throws SQLException {
+        String dataQuery = "SELECT Data FROM KineticChunks WHERE ChunkKey = '?'";
+        PreparedStatement statement = this.databaseConnection.prepareStatement(dataQuery);
+        statement.setString(1, chunkKey);
+        ResultSet chunkResult = statement.executeQuery();
+        if (chunkResult.next()) {
+            return chunkResult.getBytes(1);
+        }
+        return new byte[0];
     }
 
     /*

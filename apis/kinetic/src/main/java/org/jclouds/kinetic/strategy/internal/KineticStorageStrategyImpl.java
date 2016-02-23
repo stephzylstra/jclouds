@@ -33,7 +33,6 @@ import static org.jclouds.util.Closeables2.closeQuietly;
 
 import java.io.File;
 import java.io.IOException;
-import java.lang.reflect.Field;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
@@ -41,12 +40,11 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.nio.file.attribute.PosixFilePermission;
 import java.nio.file.attribute.UserDefinedFileAttributeView;
 
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -78,6 +76,7 @@ import org.jclouds.kinetic.util.Utils;
 import org.jclouds.io.ContentMetadata;
 import org.jclouds.io.Payload;
 import org.jclouds.kinetic.util.internal.Chunk;
+import org.jclouds.kinetic.util.internal.KineticDatabaseUtils;
 import org.jclouds.logging.Logger;
 import org.jclouds.rest.annotations.ParamValidators;
 
@@ -565,7 +564,15 @@ public class KineticStorageStrategyImpl implements LocalStorageStrategy {
             }
          }
 
-         setBlobAccess(containerName, tmpBlobName, BlobAccess.PRIVATE);
+          try {
+              KineticDatabaseUtils.getInstance().addFileToDatabase(outputFile.getPath(), actualSize);
+          } catch (SQLException e) {
+              e.printStackTrace();
+              logger.error("Could not add file to database");
+              throw new IOException("Could not put file, check database settings");
+          }
+
+          setBlobAccess(containerName, tmpBlobName, BlobAccess.PRIVATE);
 
          if (!tmpFile.renameTo(outputFile)) {
             throw new IOException("Could not rename file " + tmpFile + " to " + outputFile);
@@ -739,52 +746,6 @@ public class KineticStorageStrategyImpl implements LocalStorageStrategy {
    }
 
    // ---------------------------------------------------------- Private methods
-
-   private String padHeader(String header, Object value) {
-       Field headerSizeProperty;
-       int headerSize;
-       try {
-           headerSizeProperty = KineticConstants.class.getDeclaredField("PROPERTY_" + header + "_HEADER_SIZE_BYTES");
-           headerSize = headerSizeProperty.getInt(null);
-       } catch (NoSuchFieldException nsfe) {
-            throw new IllegalArgumentException("Field does not exist");
-       } catch (IllegalAccessException iae) {
-           /* If not specified in config, assume it doesn't need to be padded. */
-           headerSize = 0;
-       }
-       return padStringValue(String.valueOf(value), headerSize);
-   }
-
-   private String padStringValue(String value, int length) {
-     return Strings.padStart(value, length, '\0');
-   }
-
-   private LinkedHashMap<String, String> getChunkHeaders(String container, String key, Chunk chunk) {
-       LinkedHashMap<String, String> headers = new LinkedHashMap<String, String>();
-       headers.put("Company-Hash",
-               padHeader("COMPANY_HASH", KineticConstants.PROPERTY_COMPANY_HASH_HEADER));
-       headers.put("Application-Hash",
-               padHeader("APPLICATION_HASH", KineticConstants.PROPERTY_APPLICATION_HASH_HEADER));
-       headers.put("File-Id", padHeader("FILE_ID", String.format("%s/%s", container, key)));
-       headers.put("Chunk-Id", padHeader("CHUNK_ID", chunk.getId()));
-       headers.put("Raid-Level",
-               padHeader("RAID_LEVEL", KineticConstants.PROPERTY_RAID_LEVEL_HEADER));
-       headers.put("Raid-Length",
-               padHeader("RAID_LENGTH", KineticConstants.PROPERTY_RAID_LENGTH_HEADER));
-       headers.put("Block-Type", padHeader("BLOCK_TYPE", "D"));
-       headers.put("Content-Hash", padHeader("CONTENT_HASH", "Test"));
-
-       return headers;
-   }
-
-   private String getChunkHeader(String headerName, String container, String key, Chunk chunk) {
-       HashMap<String, String> headers = this.getChunkHeaders(container, key, chunk);
-       String headerValue = headers.get(headerName);
-       if (null != headerValue) {
-           return headerValue;
-       }
-       throw new IllegalArgumentException("Header does not exist");
-   }
 
    private boolean buildPathAndChecksIfBlobExists(String... tokens) throws IOException {
       String path = buildPathStartingFromBaseDir(tokens);

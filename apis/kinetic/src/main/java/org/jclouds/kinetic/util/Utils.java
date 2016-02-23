@@ -16,27 +16,24 @@
  */
 package org.jclouds.kinetic.util;
 
-import static java.nio.file.FileSystems.getDefault;
+import com.google.common.base.Strings;
+import com.google.common.util.concurrent.Uninterruptibles;
+import org.jclouds.kinetic.reference.KineticConstants;
 
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.nio.file.AccessDeniedException;
-import java.nio.file.DirectoryNotEmptyException;
-import java.nio.file.Files;
-import java.nio.file.NoSuchFileException;
-import java.nio.file.Path;
-import java.nio.file.attribute.AclEntry;
-import java.nio.file.attribute.AclEntryPermission;
-import java.nio.file.attribute.AclEntryType;
-import java.nio.file.attribute.AclFileAttributeView;
-import java.nio.file.attribute.UserPrincipal;
+import java.lang.reflect.Field;
+import java.nio.file.*;
+import java.nio.file.attribute.*;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 
-import com.google.common.util.concurrent.Uninterruptibles;
+import static java.nio.file.FileSystems.getDefault;
 
 /**
  * Utilities for the kinetic blobstore.
@@ -53,6 +50,17 @@ public class Utils {
    public static boolean isMacOSX() {
       String osName = System.getProperty("os.name");
       return osName.contains("OS X");
+   }
+
+    /**
+     * Determine the number of chunks a file of the given size will need.
+     * @param size The file size for which we need the number of chunks.
+     * @return The number of chunks needed to store a file of that size, including its metadata.
+     */
+   public static int numberOfChunksForSize(long size) {
+      long actualChunkDataSize = KineticConstants.PROPERTY_CHUNK_SIZE_BYTES - KineticConstants
+              .PROPERTY_CHUNK_FULL_HEADER_SIZE_BYTES;
+      return (int)Math.ceil(size / actualChunkDataSize);
    }
 
    /**
@@ -74,6 +82,56 @@ public class Utils {
       }
 
       delete(file);
+   }
+
+   public static String padHeader(String header, Object value) {
+      Field headerSizeProperty;
+      int headerSize;
+      try {
+         headerSizeProperty = KineticConstants.class.getDeclaredField("PROPERTY_" + header + "_HEADER_SIZE_BYTES");
+         headerSize = headerSizeProperty.getInt(null);
+      } catch (NoSuchFieldException nsfe) {
+         throw new IllegalArgumentException("Field does not exist");
+      } catch (IllegalAccessException iae) {
+           /* If not specified in config, assume it doesn't need to be padded. */
+         headerSize = 0;
+      }
+      return padStringValue(String.valueOf(value), headerSize);
+   }
+
+   private static String padStringValue(String value, int length) {
+      return Strings.padStart(value, length, '\0');
+   }
+
+   public static Map<String, String> getChunkHeaders(String container, String key, int chunkId) {
+      return getChunkHeaders(container + "/" + key, chunkId);
+   }
+
+   public static Map<String, String> getChunkHeaders(String path, int chunkId) {
+      Map<String, String> headers = new LinkedHashMap<String, String>();
+      headers.put("Company-Hash",
+              padHeader("COMPANY_HASH", KineticConstants.PROPERTY_COMPANY_HASH_HEADER));
+      headers.put("Application-Hash",
+              padHeader("APPLICATION_HASH", KineticConstants.PROPERTY_APPLICATION_HASH_HEADER));
+      headers.put("File-Id", padHeader("FILE_ID", path));
+      headers.put("Chunk-Id", padHeader("CHUNK_ID", chunkId));
+      headers.put("Raid-Level",
+              padHeader("RAID_LEVEL", KineticConstants.PROPERTY_RAID_LEVEL_HEADER));
+      headers.put("Raid-Length",
+              padHeader("RAID_LENGTH", KineticConstants.PROPERTY_RAID_LENGTH_HEADER));
+      headers.put("Block-Type", padHeader("BLOCK_TYPE", "D"));
+      headers.put("Content-Hash", padHeader("CONTENT_HASH", "Test"));
+
+      return headers;
+   }
+
+   private String getChunkHeader(String headerName, String container, String key, int chunkId) {
+      Map<String, String> headers = this.getChunkHeaders(container, key, chunkId);
+      String headerValue = headers.get(headerName);
+      if (null != headerValue) {
+         return headerValue;
+      }
+      throw new IllegalArgumentException("Header does not exist");
    }
 
    public static void delete(File file) throws IOException {

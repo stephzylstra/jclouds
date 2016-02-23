@@ -65,7 +65,6 @@ public class Chunk {
         return result;
     }
 
-
     private byte[] getDecryptedData() {
         String encryptionType = strategy.getKineticEncryptionAlgorithm();
         if (encryptionType.equals("none")) {
