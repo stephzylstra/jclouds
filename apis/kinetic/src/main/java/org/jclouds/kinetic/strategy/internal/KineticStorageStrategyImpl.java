@@ -16,85 +16,59 @@
  */
 package org.jclouds.kinetic.strategy.internal;
 
-import static com.google.common.base.Preconditions.checkNotNull;
-import static com.google.common.base.Strings.isNullOrEmpty;
-import static com.google.common.io.BaseEncoding.base16;
-import static java.nio.file.Files.getFileAttributeView;
-import static java.nio.file.Files.getPosixFilePermissions;
-import static java.nio.file.Files.probeContentType;
-import static java.nio.file.Files.readAttributes;
-import static java.nio.file.Files.setPosixFilePermissions;
-import static org.jclouds.kinetic.util.Utils.delete;
-import static org.jclouds.kinetic.util.Utils.isPrivate;
-import static org.jclouds.kinetic.util.Utils.isWindows;
-import static org.jclouds.kinetic.util.Utils.setPrivate;
-import static org.jclouds.kinetic.util.Utils.setPublic;
-import static org.jclouds.util.Closeables2.closeQuietly;
-
-import java.io.File;
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Path;
-import java.nio.file.attribute.BasicFileAttributes;
-import java.nio.file.attribute.PosixFilePermission;
-import java.nio.file.attribute.UserDefinedFileAttributeView;
-
-import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.TreeMap;
-import java.util.UUID;
-
-import javax.annotation.Resource;
-import javax.inject.Inject;
-import javax.inject.Named;
-import javax.inject.Provider;
-
-import org.jclouds.blobstore.LocalStorageStrategy;
-import org.jclouds.blobstore.domain.Blob;
-import org.jclouds.blobstore.domain.BlobAccess;
-import org.jclouds.blobstore.domain.BlobBuilder;
-import org.jclouds.blobstore.domain.ContainerAccess;
-import org.jclouds.blobstore.domain.MutableStorageMetadata;
-import org.jclouds.blobstore.domain.StorageMetadata;
-import org.jclouds.blobstore.domain.StorageType;
-import org.jclouds.blobstore.domain.internal.MutableStorageMetadataImpl;
-import org.jclouds.blobstore.options.CreateContainerOptions;
-import org.jclouds.blobstore.options.ListContainerOptions;
-import org.jclouds.blobstore.reference.BlobStoreConstants;
-import org.jclouds.domain.Location;
-import org.jclouds.kinetic.predicates.validators.KineticBlobKeyValidator;
-import org.jclouds.kinetic.predicates.validators.KineticContainerNameValidator;
-import org.jclouds.kinetic.reference.KineticConstants;
-import org.jclouds.kinetic.util.Utils;
-import org.jclouds.io.ContentMetadata;
-import org.jclouds.io.Payload;
-import org.jclouds.kinetic.util.internal.Chunk;
-import org.jclouds.kinetic.util.internal.KineticDatabaseUtils;
-import org.jclouds.logging.Logger;
-import org.jclouds.rest.annotations.ParamValidators;
-
 import com.google.common.base.Function;
 import com.google.common.base.Supplier;
 import com.google.common.base.Throwables;
-import com.google.common.base.Strings;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Iterables;
-import com.google.common.collect.Sets;
+import com.google.common.collect.*;
 import com.google.common.hash.HashCode;
 import com.google.common.hash.Hashing;
 import com.google.common.hash.HashingInputStream;
 import com.google.common.io.ByteSource;
 import com.google.common.io.Files;
 import com.google.common.primitives.Longs;
+import org.apache.commons.lang3.ArrayUtils;
+import org.jclouds.blobstore.LocalStorageStrategy;
+import org.jclouds.blobstore.domain.*;
+import org.jclouds.blobstore.domain.internal.MutableStorageMetadataImpl;
+import org.jclouds.blobstore.options.CreateContainerOptions;
+import org.jclouds.blobstore.options.ListContainerOptions;
+import org.jclouds.blobstore.reference.BlobStoreConstants;
+import org.jclouds.domain.Location;
+import org.jclouds.io.ContentMetadata;
+import org.jclouds.io.Payload;
+import org.jclouds.kinetic.predicates.validators.KineticBlobKeyValidator;
+import org.jclouds.kinetic.predicates.validators.KineticContainerNameValidator;
+import org.jclouds.kinetic.reference.KineticConstants;
+import org.jclouds.kinetic.util.Utils;
+import org.jclouds.kinetic.util.internal.Chunk;
+import org.jclouds.kinetic.util.internal.KineticDatabaseUtils;
+import org.jclouds.logging.Logger;
+import org.jclouds.rest.annotations.ParamValidators;
+
+import javax.annotation.Resource;
+import javax.inject.Inject;
+import javax.inject.Named;
+import javax.inject.Provider;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
+import java.nio.file.attribute.BasicFileAttributes;
+import java.nio.file.attribute.PosixFilePermission;
+import java.nio.file.attribute.UserDefinedFileAttributeView;
+import java.sql.SQLException;
+import java.util.*;
+
+import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.base.Strings.isNullOrEmpty;
+import static com.google.common.io.BaseEncoding.base16;
+import static java.nio.file.Files.*;
+import static org.jclouds.kinetic.util.Utils.delete;
+import static org.jclouds.kinetic.util.Utils.*;
+
+//import static org.jclouds.kinetic.util.Utils.*
 
 /**
  * KineticStorageStrategyImpl implements a blob store that stores objects
@@ -424,17 +398,31 @@ public class KineticStorageStrategyImpl implements LocalStorageStrategy {
         BlobBuilder builder = blobBuilders.get();
         builder.name(key);
         File file = getFileForBlobKey(container, key);
-        ByteSource byteSource;
 
-        if (getDirectoryBlobSuffix(key) != null) {
-            logger.debug("%s - %s is a directory", container, key);
-            byteSource = ByteSource.empty();
-        } else {
-            byteSource = Files.asByteSource(file)
-                    .slice(chunkId, KineticConstants.PROPERTY_CHUNK_SIZE_BYTES - KineticConstants.PROPERTY_CHUNK_FULL_HEADER_SIZE_BYTES);
+        try {
+            List<String> chunkKeys = KineticDatabaseUtils.getInstance().getFileChunkKeysFromDatabase(file.getPath());
+            byte[] blobData = new byte[0];
+            for (String chunkKey : chunkKeys) {
+                byte[] data = KineticDatabaseUtils.getInstance().getChunkFromDatabase(chunkKey);
+                blobData = ArrayUtils.addAll(blobData, data);
+            }
+
+            return this.createBlobFromByteSource(container, key, ByteSource.wrap(blobData));
+
+        } catch (SQLException sqle) {
+
+            ByteSource byteSource;
+
+            if (getDirectoryBlobSuffix(key) != null) {
+                logger.debug("%s - %s is a directory", container, key);
+                byteSource = ByteSource.empty();
+            } else {
+                byteSource = Files.asByteSource(file)
+                        .slice(chunkId, KineticConstants.PROPERTY_CHUNK_SIZE_BYTES - KineticConstants.PROPERTY_CHUNK_FULL_HEADER_SIZE_BYTES);
+            }
+
+            return this.createBlobFromByteSource(container, key, byteSource);
         }
-
-        return this.createBlobFromByteSource(container, key, byteSource);
     }
 
    @Override
@@ -522,77 +510,66 @@ public class KineticStorageStrategyImpl implements LocalStorageStrategy {
    public String putBlob(final String containerName, final Blob blob) throws IOException {
       String blobKey = blob.getMetadata().getName();
       Payload payload = blob.getPayload();
+
+      InputStream payloadStream = payload.openStream();
+
+      HashingInputStream his = new HashingInputStream(Hashing.md5(), payloadStream);
+      // Reset input stream back to beginning
+      payloadStream.reset();
+
       kineticContainerNameValidator.validate(containerName);
       kineticBlobKeyValidator.validate(blobKey);
       if (getDirectoryBlobSuffix(blobKey) != null) {
          return putDirectoryBlob(containerName, blob);
       }
-      File outputFile = getFileForBlobKey(containerName, blobKey);
-      // TODO: should we use a known suffix to filter these out during list?
-      String tmpBlobName = blobKey + "-" + UUID.randomUUID();
-      File tmpFile = getFileForBlobKey(containerName, tmpBlobName);
-      Path tmpPath = tmpFile.toPath();
-      HashingInputStream his = null;
+
+      long fileLength = payload.getContentMetadata().getContentLength();
+      long chunksRequired = numberOfChunksForSize(fileLength);
+      int chunkDataLength = KineticConstants.PROPERTY_CHUNK_SIZE_BYTES - KineticConstants
+              .PROPERTY_CHUNK_FULL_HEADER_SIZE_BYTES;
+      int currentChunk = 0;
+      long fileId = -1;
       try {
-         Files.createParentDirs(tmpFile);
-         his = new HashingInputStream(Hashing.md5(), payload.openStream());
-         long actualSize = Files.asByteSink(tmpFile).writeFrom(his);
-         Long expectedSize = blob.getMetadata().getContentMetadata().getContentLength();
-         if (expectedSize != null && actualSize != expectedSize) {
-            throw new IOException("Content-Length mismatch, actual: " + actualSize +
-                  " expected: " + expectedSize);
-         }
-         HashCode actualHashCode = his.hash();
-         HashCode expectedHashCode = payload.getContentMetadata().getContentMD5AsHashCode();
-         if (expectedHashCode != null && !actualHashCode.equals(expectedHashCode)) {
-            throw new IOException("MD5 hash code mismatch, actual: " + actualHashCode +
-                  " expected: " + expectedHashCode);
-         }
-         payload.getContentMetadata().setContentMD5(actualHashCode);
+          fileId = KineticDatabaseUtils.getInstance().getFileIdFromDatabase(containerName + "/" + blobKey);
+      } catch (SQLException sqle) {
+          sqle.printStackTrace();
+      }
+      while (currentChunk < chunksRequired) {
+          Chunk chunk = new Chunk(this, fileId, currentChunk);
+          byte[] chunkData = new byte[KineticConstants.PROPERTY_CHUNK_SIZE_BYTES];
 
-         if (outputFile.exists()) {
-            delete(outputFile);
-         }
+          // Get header type values
+          Map<String, String> headers = getChunkHeaders(containerName, blobKey, currentChunk);
+          String chunkKey = getChunkKey(containerName, blobKey, currentChunk);
 
-         UserDefinedFileAttributeView view = getUserDefinedFileAttributeView(tmpPath);
-         if (view != null) {
-            try {
-               view.write(XATTR_CONTENT_MD5, ByteBuffer.wrap(actualHashCode.asBytes()));
-               writeCommonMetadataAttr(view, blob);
-            } catch (IOException e) {
-               logger.debug("xattrs not supported on %s", tmpPath);
-            }
-         }
-
-          try {
-              KineticDatabaseUtils.getInstance().addFileToDatabase(outputFile.getPath(), actualSize);
-          } catch (SQLException e) {
-              e.printStackTrace();
-              logger.error("Could not add file to database");
-              throw new IOException("Could not put file, check database settings");
+          // Set header values into the actual data of the chunk
+          byte[] headerBytes = chunkKey.getBytes("UTF-8");
+          for (int i = 0; i < headerBytes.length; i++) {
+              chunkData[i] = headerBytes[i];
           }
 
-          setBlobAccess(containerName, tmpBlobName, BlobAccess.PRIVATE);
+          // Read data from blob into chunk
+          payload.openStream().read(chunkData, headerBytes.length, chunkDataLength);
+          chunk.setData(chunkData);
 
-         if (!tmpFile.renameTo(outputFile)) {
-            throw new IOException("Could not rename file " + tmpFile + " to " + outputFile);
-         }
-         tmpFile = null;
+          // Send data to KDCC
+          try {
+              KineticDatabaseUtils.getInstance().addChunkToDatabase(chunkKey, chunkData);
+          } catch (SQLException sqle) {
+              return null;
+          }
 
-         return base16().lowerCase().encode(actualHashCode.asBytes());
-      } finally {
-         if (tmpFile != null) {
-            try {
-               delete(tmpFile);
-            } catch (IOException e) {
-               logger.debug("Could not delete %s: %s", tmpFile, e);
-            }
-         }
-         closeQuietly(his);
-         if (payload != null) {
-            payload.release();
-         }
       }
+       try {
+           KineticDatabaseUtils.getInstance().addFileToDatabase(containerName + "/" + blobKey, fileLength);
+       } catch (SQLException e) {
+           e.printStackTrace();
+       }
+
+       if (payload != null) {
+             payload.release();
+         }
+       return base16().lowerCase().encode(his.hash().asBytes());
    }
 
    @Override

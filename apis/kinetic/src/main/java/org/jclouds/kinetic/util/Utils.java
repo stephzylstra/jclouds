@@ -25,8 +25,16 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.lang.reflect.Field;
-import java.nio.file.*;
-import java.nio.file.attribute.*;
+import java.nio.file.AccessDeniedException;
+import java.nio.file.DirectoryNotEmptyException;
+import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
+import java.nio.file.Path;
+import java.nio.file.attribute.AclEntry;
+import java.nio.file.attribute.AclEntryPermission;
+import java.nio.file.attribute.AclEntryType;
+import java.nio.file.attribute.AclFileAttributeView;
+import java.nio.file.attribute.UserPrincipal;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -132,6 +140,15 @@ public class Utils {
          return headerValue;
       }
       throw new IllegalArgumentException("Header does not exist");
+   }
+
+   public static String getChunkKey(String container, String filePath, int chunkId) {
+      Map<String, String> headers = getChunkHeaders(container, filePath, chunkId);
+      StringBuilder key = new StringBuilder();
+      for (Map.Entry<String, String> entry : headers.entrySet()) {
+         key.append(entry.getValue());
+      }
+      return key.toString();
    }
 
    public static void delete(File file) throws IOException {

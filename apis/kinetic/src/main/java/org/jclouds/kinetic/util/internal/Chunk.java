@@ -18,6 +18,9 @@ package org.jclouds.kinetic.util.internal;
 
 import org.jclouds.kinetic.reference.KineticConstants;
 import org.jclouds.kinetic.strategy.internal.KineticStorageStrategyImpl;
+
+import java.util.Map;
+
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.jclouds.kinetic.util.internal.EncryptionUtils.decrypt;
 
@@ -31,6 +34,10 @@ public class Chunk {
     private long chunkId;
     private String fileKey;
     private String hash;
+
+    private String chunkKey;
+    private Map<String, String> headers;
+
     private long length;
 
     private byte[] data;

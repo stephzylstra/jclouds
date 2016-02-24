@@ -42,7 +42,7 @@ public final class KineticDatabaseUtils {
         // Deliberately empty to defeat instantiation
     }
 
-    public synchronized static KineticDatabaseUtils getInstance() throws SQLException{
+    public static synchronized KineticDatabaseUtils getInstance() throws SQLException{
         if (instance == null) {
             instance = new KineticDatabaseUtils();
             instance.initialise();
@@ -96,7 +96,7 @@ public final class KineticDatabaseUtils {
         for (int i = 0; i < numChunks; i++) {
             Map<String, String> headers = getChunkHeaders(path, i);
             StringBuilder key = new StringBuilder();
-            for (Map.Entry<String, String> entry: headers.entrySet()) {
+            for (Map.Entry<String, String> entry : headers.entrySet()) {
                 key.append(entry.getValue());
             }
             keys.add(key.toString());
@@ -113,6 +113,14 @@ public final class KineticDatabaseUtils {
             return chunkResult.getBytes(1);
         }
         return new byte[0];
+    }
+
+    public void addChunkToDatabase(String chunkKey, byte[] data) throws SQLException {
+        String query = "REPLACE INTO KineticChunks (ChunkKey, Data) VALUES(?, ?)";
+        PreparedStatement statement = this.databaseConnection.prepareStatement(query);
+        statement.setString(1, chunkKey);
+        statement.setBytes(2, data);
+        statement.execute();
     }
 
     /*
